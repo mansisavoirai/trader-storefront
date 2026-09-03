@@ -1,0 +1,59 @@
+/* Trader Storefront Generator — Custom Styles */
+/* Most styling is done via Tailwind CDN. This file handles base overrides and utilities. */
+
+/* Smooth scrolling */
+html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Remove default tap highlight on mobile */
+* {
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Better image rendering */
+img {
+    image-rendering: -webkit-optimize-contrast;
+}
+
+/* Selection color */
+::selection {
+    background: rgba(34, 197, 94, 0.3);
+    color: white;
+}
+
+/* Scrollbar styling (webkit) */
+::-webkit-scrollbar {
+    width: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.15);
+    border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.25);
+}
+
+/* Print styles */
+@media print {
+    nav, footer, .whatsapp-btn, #lightbox, .overlay-loading {
+        display: none !important;
+    }
+    body {
+        background: white !important;
+        color: black !important;
+    }
+    .product-card {
+        opacity: 1 !important;
+        transform: none !important;
+        box-shadow: none !important;
+        border: 1px solid #e5e7eb;
+        break-inside: avoid;
+    }
+}

@@ -1,0 +1,46 @@
+============================================================
+TRADER STOREFRONT GENERATOR — QUICK START
+============================================================
+
+No API keys needed. No database setup. No config files.
+Just extract, install, run.
+
+============================================================
+
+STEP 1 — Extract the ZIP, then open a terminal in the folder
+
+STEP 2 — Create a virtual environment
+
+  python -m venv venv
+  venv\Scripts\activate          (Windows)
+  source venv/bin/activate      (Mac/Linux)
+
+STEP 3 — Install dependencies
+
+  pip install -r requirements.txt
+
+STEP 4 — Run the server
+
+  uvicorn main:app --reload --port 8000
+
+STEP 5 — Open in your browser
+
+  http://localhost:8000          Landing page
+  http://localhost:8000/create-store    Create a store
+
+STEP 6 — Test it
+
+  1. Open /create-store
+  2. Fill in business name, WhatsApp number, category
+  3. Upload a profile photo
+  4. Add at least one product (name, price, photo)
+  5. Click Create Store
+  6. Click the store link on the success page
+  7. Verify the store page and WhatsApp order buttons work
+
+TO STOP: Press Ctrl + C
+
+TO DEPLOY: See README.md — Railway section
+TO CONNECT WHATSAPP: See README.md — Connecting the n8n WhatsApp Flow
+
+============================================================

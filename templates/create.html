@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Your Store — Trader Storefront Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .gradient-bg {
+            background: linear-gradient(160deg, #0a0f1a 0%, #111827 40%, #0f172a 70%, #0a0f1a 100%);
+        }
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.4), 0 0 20px rgba(34, 197, 94, 0.1);
+            border-color: rgba(34, 197, 94, 0.6);
+        }
+        .product-card {
+            animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .page-enter { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }
+        .page-enter-delay-1 { animation-delay: 0.1s; }
+        .page-enter-delay-2 { animation-delay: 0.2s; }
+        .photo-preview { max-height: 120px; object-fit: cover; border-radius: 0.75rem; }
+        .spinner {
+            border: 3px solid rgba(255,255,255,0.2);
+            border-top: 3px solid #fff;
+            border-radius: 50%;
+            width: 22px; height: 22px;
+            animation: spin 0.7s linear infinite;
+            display: inline-block; vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .field-error {
+            color: #fca5a5;
+            font-size: 0.75rem;
+            margin-top: 0.375rem;
+            display: none;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .field-error.visible { display: flex; }
+        .input-error { border-color: rgba(239, 68, 68, 0.6) !important; }
+        .glass-card {
+            background: rgba(255,255,255,0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .glow-green { box-shadow: 0 0 30px rgba(34, 197, 94, 0.2); }
+        .glow-green:hover { box-shadow: 0 0 40px rgba(34, 197, 94, 0.35); }
+        .btn-primary {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .btn-primary:hover:not(:disabled) {
+            background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+            transform: translateY(-1px);
+        }
+        .btn-primary:active:not(:disabled) { transform: translateY(0); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .overlay-loading {
+            position: fixed; inset: 0; z-index: 100;
+            background: rgba(10, 15, 26, 0.85);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center; justify-content: center;
+        }
+        .overlay-loading.active { display: flex; }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 1; }
+            100% { transform: scale(1.8); opacity: 0; }
+        }
+        .loading-pulse::before {
+            content: '';
+            position: absolute; inset: -8px;
+            border-radius: 50%;
+            border: 2px solid rgba(34, 197, 94, 0.4);
+            animation: pulse-ring 1.5s ease-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-white">
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="overlay-loading">
+        <div class="text-center">
+            <div class="relative w-16 h-16 mx-auto mb-6 loading-pulse">
+                <div class="w-16 h-16 border-4 border-white/10 border-t-green-500 rounded-full" style="animation: spin 1s linear infinite;"></div>
+            </div>
+            <p class="text-lg font-semibold mb-1" id="loadingTitle">Creating Your Store...</p>
+            <p class="text-slate-400 text-sm" id="loadingSubtext">Uploading photos and setting everything up</p>
+        </div>
+    </div>
+
+    <!-- Nav -->
+    <nav class="border-b border-white/5 page-enter">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+            <a href="/" class="flex items-center gap-2.5 group">
+                <div class="w-9 h-9 bg-gradient-to-br from-green-400 to-emerald-600 rounded-xl flex items-center justify-center font-bold text-sm shadow-lg shadow-green-500/20 group-hover:shadow-green-500/40 transition-all">S</div>
+                <span class="font-bold text-lg tracking-tight">Savoir AI</span>
+            </a>
+            <span class="text-slate-500 text-sm hidden sm:block">Create Store</span>
+        </div>
+    </nav>
+
+    <form id="storeForm" class="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12" enctype="multipart/form-data" novalidate>
+        <!-- Error Banner -->
+        <div id="errorBanner" class="hidden bg-red-500/10 border border-red-500/30 text-red-200 rounded-2xl p-4 mb-6 text-sm flex items-start gap-3 page-enter">
+            <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <span id="errorBannerText"></span>
+        </div>
+
+        <!-- Step 1: Trader Details -->
+        <section class="mb-10 page-enter page-enter-delay-1">
+            <h1 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold mb-2 tracking-tight">Create Your Store</h1>
+            <p class="text-slate-400 mb-8 text-sm sm:text-base">Fill in your details and add your products. It takes about 2 minutes.</p>
+
+            <div class="glass-card rounded-3xl p-5 sm:p-8 space-y-6">
+                <!-- Profile Photo -->
+                <div>
+                    <label class="block text-sm font-semibold text-slate-300 mb-2.5">Profile Photo <span class="text-red-400">*</span></label>
+                    <div class="flex items-center gap-4">
+                        <div id="profilePreview" class="w-20 h-20 bg-white/5 border-2 border-dashed border-white/15 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0 transition-all hover:border-green-500/40">
+                            <svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        </div>
+                        <label class="bg-white/5 hover:bg-white/10 border border-white/15 hover:border-green-500/30 rounded-xl px-5 py-2.5 text-sm font-medium cursor-pointer transition-all">
+                            Choose Photo
+                            <input type="file" name="profile_photo" id="profilePhoto" accept="image/*" class="hidden">
+                        </label>
+                        <div id="profilePhotoError" class="field-error"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg> <span>Profile photo is required</span></div>
+                    </div>
+                </div>
+
+                <!-- Name -->
+                <div>
+                    <label for="traderName" class="block text-sm font-semibold text-slate-300 mb-2.5">Your Name / Business Name <span class="text-red-400">*</span></label>
+                    <input type="text" id="traderName" name="trader_name" placeholder="e.g. Rajesh Pipes &amp; Fittings"
+                        class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-600 transition-all text-sm sm:text-base">
+                    <div id="traderNameError" class="field-error"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg> <span>Please enter your name or business name</span></div>
+                </div>
+
+                <!-- WhatsApp Number -->
+                <div>
+                    <label for="whatsappNumber" class="block text-sm font-semibold text-slate-300 mb-2.5">WhatsApp Number (10 digits) <span class="text-red-400">*</span></label>
+                    <div class="flex items-center gap-2">
+                        <span class="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-slate-400 text-sm font-semibold flex-shrink-0">+91</span>
+                        <input type="tel" id="whatsappNumber" name="whatsapp_number" maxlength="10" placeholder="9876543210"
+                            class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-600 transition-all text-sm sm:text-base">
+                    </div>
+                    <div id="whatsappNumberError" class="field-error"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg> <span>Enter a valid 10-digit WhatsApp number</span></div>
+                </div>
+
+                <!-- Business Category -->
+                <div>
+                    <label for="businessCategory" class="block text-sm font-semibold text-slate-300 mb-2.5">Business Category <span class="text-red-400">*</span></label>
+                    <select id="businessCategory" name="business_category"
+                        class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white transition-all text-sm sm:text-base appearance-none cursor-pointer">
+                        <option value="" class="bg-slate-800">Select a category</option>
+                        <option value="Pipe Fittings" class="bg-slate-800">Pipe Fittings</option>
+                        <option value="Electrical Hardware" class="bg-slate-800">Electrical Hardware</option>
+                        <option value="Plumbing Supplies" class="bg-slate-800">Plumbing Supplies</option>
+                        <option value="Paint &amp; Finishing" class="bg-slate-800">Paint &amp; Finishing</option>
+                        <option value="Tools &amp; Equipment" class="bg-slate-800">Tools &amp; Equipment</option>
+                        <option value="Sanitary Ware" class="bg-slate-800">Sanitary Ware</option>
+                        <option value="Building Materials" class="bg-slate-800">Building Materials</option>
+                        <option value="Safety Equipment" class="bg-slate-800">Safety Equipment</option>
+                        <option value="Welding Supplies" class="bg-slate-800">Welding Supplies</option>
+                        <option value="Other" class="bg-slate-800">Other</option>
+                    </select>
+                    <div id="businessCategoryError" class="field-error"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg> <span>Please select a business category</span></div>
+                </div>
+
+                <!-- Store Slug -->
+                <div>
+                    <label for="slugOverride" class="block text-sm font-semibold text-slate-300 mb-2.5">Store URL Slug</label>
+                    <div class="flex items-center gap-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3">
+                        <span class="text-slate-500 text-xs sm:text-sm whitespace-nowrap">yourdomain.com/store/</span>
+                        <input type="text" id="slugOverride" name="slug_override" placeholder="auto-generated-from-name"
+                            class="flex-1 bg-transparent text-white placeholder-slate-600 transition-all border-none p-0 focus:ring-0 focus:shadow-none text-sm sm:text-base min-w-0">
+                    </div>
+                    <p class="text-xs text-slate-500 mt-1.5">Leave blank to auto-generate from your name</p>
+                </div>
+
+                <!-- Bio -->
+                <div>
+                    <label for="bio" class="block text-sm font-semibold text-slate-300 mb-2.5">Short Bio <span class="text-slate-500 font-normal">(optional)</span></label>
+                    <textarea id="bio" name="bio" rows="2" maxlength="200" placeholder="A brief line about your business..."
+                        class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-600 transition-all resize-none text-sm sm:text-base"></textarea>
+                </div>
+            </div>
+        </section>
+
+        <!-- Step 2: Products -->
+        <section class="mb-10 page-enter page-enter-delay-2">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-xl sm:text-2xl font-bold">Your Products</h2>
+                    <p class="text-slate-500 text-sm mt-1">Add up to 10 products with photos</p>
+                </div>
+                <button type="button" id="addProductBtn"
+                    class="bg-green-500/10 hover:bg-green-500/20 text-green-400 border border-green-500/20 hover:border-green-500/40 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    Add Product
+                </button>
+            </div>
+
+            <div id="productsError" class="field-error mb-4"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg> <span>Please add at least one product with a photo, name, and price</span></div>
+
+            <div id="productsContainer" class="space-y-4">
+                <!-- Products will be added here dynamically -->
+            </div>
+        </section>
+
+        <!-- Submit -->
+        <div class="page-enter page-enter-delay-2">
+            <button type="submit" id="submitBtn"
+                class="w-full btn-primary text-white font-bold px-8 py-4 rounded-2xl text-base sm:text-lg glow-green">
+                Create Store
+            </button>
+            <p class="text-center text-slate-600 text-xs mt-4">Your store will be live immediately after creation</p>
+        </div>
+    </form>
+
+    <footer class="border-t border-white/5 py-8 text-center text-slate-600 text-sm mt-8">
+        <p>Powered by <a href="/create-store" class="text-green-500/70 hover:text-green-400 transition-colors">Savoir AI</a></p>
+    </footer>
+
+    <script>
+        let productCount = 0;
+        const maxProducts = 10;
+        const container = document.getElementById('productsContainer');
+        const addBtn = document.getElementById('addProductBtn');
+        const form = document.getElementById('storeForm');
+
+        function slugify(text) {
+            return text.toString().toLowerCase()
+                .replace(/\s+/g, '-')
+                .replace(/[^\w\-]+/g, '')
+                .replace(/\-\-+/g, '-')
+                .replace(/^-+/, '')
+                .replace(/-+$/, '');
+        }
+
+        // Auto-generate slug from name
+        document.getElementById('traderName').addEventListener('input', function() {
+            const slugInput = document.getElementById('slugOverride');
+            if (!slugInput.dataset.manuallyEdited) {
+                slugInput.value = slugify(this.value);
+            }
+        });
+
+        document.getElementById('slugOverride').addEventListener('input', function() {
+            this.dataset.manuallyEdited = 'true';
+        });
+
+        // Profile photo preview
+        document.getElementById('profilePhoto').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    const preview = document.getElementById('profilePreview');
+                    preview.innerHTML = '<img src="' + ev.target.result + '" class="w-full h-full object-cover">';
+                    preview.classList.remove('border-dashed');
+                    preview.classList.add('border-solid', 'border-green-500/50');
+                };
+                reader.readAsDataURL(file);
+            }
+            clearFieldError('profilePhotoError');
+        });
+
+        function addProduct() {
+            if (productCount >= maxProducts) {
+                addBtn.disabled = true;
+                addBtn.textContent = 'Max 10 Products';
+                return;
+            }
+
+            productCount++;
+            const n = productCount;
+            const card = document.createElement('div');
+            card.className = 'product-card glass-card rounded-2xl p-5 sm:p-6';
+            card.id = 'product-' + n;
+            card.dataset.productIndex = n;
+
+            // *** BUG FIX: Use backtick template literals instead of single quotes ***
+            // The old code used single-quoted strings which broke when HTML content
+            // contained single quotes in onclick handlers, killing the ENTIRE script block.
+            card.innerHTML = `
+                <div class="flex items-center justify-between mb-5">
+                    <h3 class="font-semibold text-green-400 text-sm sm:text-base flex items-center gap-2">
+                        <span class="w-6 h-6 bg-green-500/20 rounded-lg flex items-center justify-center text-xs font-bold">${n}</span>
+                        Product ${n}
+                    </h3>
+                    <button type="button" onclick="removeProduct(${n})" class="text-red-400/70 hover:text-red-300 text-sm font-medium transition-colors flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        Remove
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Product Photo <span class="text-red-400 normal-case">*</span></label>
+                        <label class="block w-full bg-white/[0.02] border-2 border-dashed border-white/10 hover:border-green-500/30 rounded-xl p-6 sm:p-8 text-center cursor-pointer transition-all group" id="photoLabel-${n}">
+                            <input type="file" name="product_photos" accept="image/*" class="hidden product-photo-input">
+                            <div class="photo-placeholder">
+                                <div class="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center mx-auto mb-2 group-hover:bg-green-500/10 transition-colors">
+                                    <svg class="w-5 h-5 text-slate-500 group-hover:text-green-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                </div>
+                                <p class="text-slate-500 text-sm">Tap to upload photo</p>
+                                <p class="text-slate-600 text-xs mt-1">JPG, PNG up to 5MB</p>
+                            </div>
+                            <img class="photo-preview hidden mx-auto" alt="Product photo">
+                        </label>
+                        <div class="field-error" id="productPhotoError-${n}"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg> <span>Product photo is required</span></div>
+                    </div>
+                    <div class="grid sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Product Name <span class="text-red-400 normal-case">*</span></label>
+                            <input type="text" name="product_names" placeholder="e.g. CPVC Pipe 1 inch"
+                                class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm placeholder-slate-600 transition-all">
+                            <div class="field-error" id="productNameError-${n}"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg> <span>Product name is required</span></div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Price (INR) <span class="text-red-400 normal-case">*</span></label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-medium">₹</span>
+                                <input type="number" name="product_prices" min="0" step="0.5" placeholder="450"
+                                    class="w-full bg-white/5 border border-white/10 rounded-xl pl-8 pr-4 py-2.5 text-white text-sm placeholder-slate-600 transition-all">
+                            </div>
+                            <div class="field-error" id="productPriceError-${n}"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg> <span>Valid price is required</span></div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Description <span class="text-slate-600 font-normal normal-case">(optional)</span></label>
+                        <input type="text" name="product_descriptions" maxlength="100" placeholder="Short description (max 100 chars)"
+                            class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm placeholder-slate-600 transition-all">
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+
+            // Photo preview handler for this product
+            const photoInput = card.querySelector('.product-photo-input');
+            const preview = card.querySelector('.photo-preview');
+            const placeholder = card.querySelector('.photo-placeholder');
+            const photoLabel = card.querySelector('label[id^="photoLabel"]');
+            photoInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(ev) {
+                        preview.src = ev.target.result;
+                        preview.classList.remove('hidden');
+                        placeholder.classList.add('hidden');
+                        if (photoLabel) {
+                            photoLabel.classList.remove('border-dashed');
+                            photoLabel.classList.add('border-solid', 'border-green-500/30');
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+                const errEl = document.getElementById('productPhotoError-' + n);
+                if (errEl) errEl.classList.remove('visible');
+            });
+
+            updateAddButton();
+        }
+
+        function removeProduct(n) {
+            const el = document.getElementById('product-' + n);
+            if (el) {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(-10px) scale(0.95)';
+                el.style.transition = 'all 0.3s ease';
+                setTimeout(function() {
+                    el.remove();
+                    productCount--;
+                    updateAddButton();
+                }, 300);
+            }
+        }
+
+        function updateAddButton() {
+            const activeCards = container.querySelectorAll('.product-card');
+            if (activeCards.length >= maxProducts) {
+                addBtn.disabled = true;
+                addBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                addBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg> Max 10 Products';
+            } else {
+                addBtn.disabled = false;
+                addBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                addBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg> Add Product';
+            }
+        }
+
+        // --- Validation Helpers ---
+        function showFieldError(id) {
+            var el = document.getElementById(id);
+            if (el) el.classList.add('visible');
+        }
+        function clearFieldError(id) {
+            var el = document.getElementById(id);
+            if (el) el.classList.remove('visible');
+        }
+        function setInputError(inputEl, errorId) {
+            if (inputEl) inputEl.classList.add('input-error');
+            showFieldError(errorId);
+        }
+        function clearInputError(inputEl, errorId) {
+            if (inputEl) inputEl.classList.remove('input-error');
+            clearFieldError(errorId);
+        }
+
+        // Clear errors on input
+        document.getElementById('traderName').addEventListener('input', function() {
+            if (this.value.trim()) clearInputError(this, 'traderNameError');
+        });
+        document.getElementById('whatsappNumber').addEventListener('input', function() {
+            // Only allow digits
+            this.value = this.value.replace(/[^0-9]/g, '');
+            if (/^[0-9]{10}$/.test(this.value)) clearInputError(this, 'whatsappNumberError');
+        });
+        document.getElementById('businessCategory').addEventListener('change', function() {
+            if (this.value) clearInputError(this, 'businessCategoryError');
+        });
+
+        function validateForm() {
+            let valid = true;
+            let firstInvalid = null;
+
+            // Clear all errors first
+            document.querySelectorAll('.field-error').forEach(function(el) { el.classList.remove('visible'); });
+            document.querySelectorAll('.input-error').forEach(function(el) { el.classList.remove('input-error'); });
+
+            // Profile photo
+            var profilePhoto = document.getElementById('profilePhoto');
+            if (!profilePhoto.files || profilePhoto.files.length === 0) {
+                showFieldError('profilePhotoError');
+                valid = false;
+                if (!firstInvalid) firstInvalid = profilePhoto;
+            }
+
+            // Trader name
+            var traderName = document.getElementById('traderName');
+            if (!traderName.value.trim()) {
+                setInputError(traderName, 'traderNameError');
+                valid = false;
+                if (!firstInvalid) firstInvalid = traderName;
+            }
+
+            // WhatsApp number
+            var whatsappNumber = document.getElementById('whatsappNumber');
+            if (!/^[0-9]{10}$/.test(whatsappNumber.value.trim())) {
+                setInputError(whatsappNumber, 'whatsappNumberError');
+                valid = false;
+                if (!firstInvalid) firstInvalid = whatsappNumber;
+            }
+
+            // Business category
+            var businessCategory = document.getElementById('businessCategory');
+            if (!businessCategory.value) {
+                setInputError(businessCategory, 'businessCategoryError');
+                valid = false;
+                if (!firstInvalid) firstInvalid = businessCategory;
+            }
+
+            // Products
+            var productCards = container.querySelectorAll('.product-card');
+            if (productCards.length === 0) {
+                showFieldError('productsError');
+                valid = false;
+            } else {
+                productCards.forEach(function(card) {
+                    var idx = card.dataset.productIndex;
+                    var photoInput = card.querySelector('.product-photo-input');
+                    var nameInput = card.querySelector('input[name="product_names"]');
+                    var priceInput = card.querySelector('input[name="product_prices"]');
+
+                    if (!photoInput.files || photoInput.files.length === 0) {
+                        showFieldError('productPhotoError-' + idx);
+                        valid = false;
+                    }
+                    if (!nameInput.value.trim()) {
+                        setInputError(nameInput, 'productNameError-' + idx);
+                        valid = false;
+                    }
+                    if (!priceInput.value || parseFloat(priceInput.value) < 0) {
+                        setInputError(priceInput, 'productPriceError-' + idx);
+                        valid = false;
+                    }
+                    if (!firstInvalid && (!photoInput.files || !photoInput.files.length)) {
+                        firstInvalid = photoInput;
+                    }
+                });
+            }
+
+            if (firstInvalid) {
+                firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            return valid;
+        }
+
+        // Form submission
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            // Hide previous banner errors
+            document.getElementById('errorBanner').classList.add('hidden');
+
+            // Client-side validation
+            if (!validateForm()) {
+                showBannerError('Please fix the errors highlighted above before submitting.');
+                return;
+            }
+
+            // Show loading overlay
+            var overlay = document.getElementById('loadingOverlay');
+            overlay.classList.add('active');
+
+            var formData = new FormData(form);
+
+            try {
+                var response = await fetch('/api/store/create', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                var data;
+                try {
+                    data = await response.json();
+                } catch (parseErr) {
+                    throw new Error('Server returned an invalid response. Please try again.');
+                }
+
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Something went wrong. Please try again.');
+                }
+
+                // Redirect to success page
+                window.location.href = '/store/' + data.store_slug + '/success';
+
+            } catch (err) {
+                overlay.classList.remove('active');
+                showBannerError(err.message || 'Network error. Please check your connection and try again.');
+            }
+        });
+
+        function showBannerError(msg) {
+            var banner = document.getElementById('errorBanner');
+            var bannerText = document.getElementById('errorBannerText');
+            bannerText.textContent = msg;
+            banner.classList.remove('hidden');
+            banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        // Add first product by default
+        addProduct();
+    </script>
+
+</body>
+</html>
