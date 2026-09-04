@@ -411,6 +411,4 @@ If this variable is not set, the fire-and-forget request silently fails and does
 | AI (n8n flow) | Groq Whisper + openai/gpt-oss-20b |
 | WhatsApp | Twilio WhatsApp API |
 
-## License
 
-MIT
