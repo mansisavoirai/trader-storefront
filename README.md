@@ -390,11 +390,7 @@ If this variable is not set, the fire-and-forget request silently fails and does
 2. [Amit Electrical Supplies](https://your-railway-app.up.railway.app/store/amit-electrical)
 3. [Suresh Plumbing Centre](https://your-railway-app.up.railway.app/store/suresh-plumbing)
 
-## Demo Video
 
-[Watch the full demo — web form store creation, WhatsApp flow, and live store page on phone](https://www.loom.com/share/PLACEHOLDER-LOOM-VIDEO-LINK)
-
----
 
 ## Tech Stack
 
